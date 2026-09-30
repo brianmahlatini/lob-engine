@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.20)
+project(lob_engine CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+option(LOB_SANITIZE "Build with ASan + UBSan" OFF)
+option(LOB_NATIVE "Tune for the build machine (-march=native)" OFF)
+
+add_library(lob INTERFACE)
+target_include_directories(lob INTERFACE include)
+target_compile_features(lob INTERFACE cxx_std_20)
+
+add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror)
+if(LOB_SANITIZE)
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address,undefined)
+endif()
+if(LOB_NATIVE)
+  add_compile_options(-march=native)
+endif()
+
+add_executable(lob_bench bench/bench.cpp)
+target_link_libraries(lob_bench PRIVATE lob)
+add_executable(lob_demo examples/demo.cpp)
+target_link_libraries(lob_demo PRIVATE lob)
+
+enable_testing()
+add_executable(lob_tests tests/test_order_book.cpp)
+target_link_libraries(lob_tests PRIVATE lob)
+target_include_directories(lob_tests SYSTEM PRIVATE third_party)
+add_test(NAME lob_tests COMMAND lob_tests)
